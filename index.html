@@ -86,15 +86,17 @@
       <div class="modal-body">
         <h2 class="section-title">Nustatymai</h2>
         
-        <div class="settings-info-box">
-          <h5>🔑 Nemokamas Gemini API Raktas</h5>
-          <p>Ši aplikacija veikia tiesiogiai jūsų naršyklėje. Kad galėtumėte nuskaityti nuotraukas, reikalingas Google AI raktas:</p>
-          <ol>
-            <li>Eikite į <a href="https://aistudio.google.com/" target="_blank" class="settings-link">Google AI Studio</a>.</li>
-            <li>Prisijunkite su savo Google paskyra ir spustelkite **"Get API key"**.</li>
-            <li>Sukurkite naują raktą (tai visiškai nemokama) ir įklijuokite jį žemiau.</li>
-          </ol>
-        </div>
+        <details class="settings-details" id="apiKeyInstructions" open>
+          <summary class="settings-summary">💡 Kaip gauti nemokamą API raktą?</summary>
+          <div class="settings-info-box" style="margin-top: 0.75rem;">
+            <p>Ši aplikacija veikia tiesiogiai jūsų naršyklėje. Kad galėtumėte nuskaityti nuotraukas, reikalingas Google AI raktas:</p>
+            <ol>
+              <li>Eikite į <a href="https://aistudio.google.com/" target="_blank" class="settings-link">Google AI Studio</a>.</li>
+              <li>Prisijunkite su savo Google paskyra ir spustelkite **"Get API key"**.</li>
+              <li>Sukurkite naują raktą (tai visiškai nemokama) ir įklijuokite jį žemiau.</li>
+            </ol>
+          </div>
+        </details>
 
         <div class="form-group">
           <label class="form-label" for="apiKeyInput">Gemini API Raktas</label>

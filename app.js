@@ -142,6 +142,14 @@ function initApp() {
   state.selectedModel = localStorage.getItem("maistokodas_model") || "gemini-3.5-flash";
   document.getElementById("modelSelect").value = state.selectedModel;
 
+  // Collapse instructions if key is already set
+  const instructions = document.getElementById("apiKeyInstructions");
+  if (state.apiKey && state.apiKey.trim() !== "") {
+    instructions.removeAttribute("open");
+  } else {
+    instructions.setAttribute("open", "");
+  }
+
   // Load Recipes with backward compatibility migration
   let storedRecipes = localStorage.getItem("maistokodas_recipes");
   if (!storedRecipes) {
@@ -407,6 +415,12 @@ function saveSettings() {
   const model = document.getElementById("modelSelect").value;
   state.selectedModel = model;
   localStorage.setItem("maistokodas_model", model);
+  
+  // Collapse instructions after saving key
+  const instructions = document.getElementById("apiKeyInstructions");
+  if (key && key.trim() !== "") {
+    instructions.removeAttribute("open");
+  }
   
   toggleApiKeyAlert();
   closeModal("settingsModal");

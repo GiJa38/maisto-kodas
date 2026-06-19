@@ -981,12 +981,36 @@ header {
 }
 
 /* API Info Guide in Settings */
-.settings-info-box {
+.settings-details {
+  margin-bottom: 1.5rem;
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-  padding: 1.25rem;
-  margin-bottom: 1.5rem;
+  padding: 1rem;
+}
+
+.settings-summary {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #fbbf24;
+  cursor: pointer;
+  outline: none;
+  user-select: none;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.settings-summary::-webkit-details-marker {
+  display: none;
+}
+
+.settings-info-box {
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin-bottom: 0;
 }
 
 .settings-info-box h5 {
