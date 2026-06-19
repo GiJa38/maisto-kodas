@@ -108,8 +108,7 @@ let state = {
   servingMultiplier: 1.0,
   activeFilter: "all",
   searchQuery: "",
-  uploadingImages: [], // Array of { id: number, base64: string, mimeType: string }
-  selectedModel: "gemini-3.5-flash"
+  uploadingImages: [] // Array of { id: number, base64: string, mimeType: string }
 };
 
 // Initialize App
@@ -134,13 +133,9 @@ function initApp() {
       .catch(err => console.error('Nepavyko užregistruoti Service Worker:', err));
   }
 
-  // Load API Key & Selected Model
+  // Load API Key
   state.apiKey = localStorage.getItem("gemini_api_key") || "";
   document.getElementById("apiKeyInput").value = state.apiKey;
-  toggleApiKeyAlert();
-
-  state.selectedModel = localStorage.getItem("maistokodas_model") || "gemini-3.5-flash";
-  document.getElementById("modelSelect").value = state.selectedModel;
 
   // Collapse instructions if key is already set
   const instructions = document.getElementById("apiKeyInstructions");
@@ -190,22 +185,13 @@ function saveRecipesToLocalStorage() {
   localStorage.setItem("maistokodas_recipes", JSON.stringify(state.recipes));
 }
 
-// Show/Hide API Key alert banner
-function toggleApiKeyAlert() {
-  const alertBanner = document.getElementById("apiKeyAlert");
-  if (state.apiKey && state.apiKey.trim() !== "") {
-    alertBanner.style.display = "none";
-  } else {
-    alertBanner.style.display = "flex";
-  }
-}
+// Help functions
 
 // Event Listeners Configuration
 function setupEventListeners() {
   // Modals Open/Close
   document.getElementById("openSettingsBtn").addEventListener("click", () => openModal("settingsModal"));
   document.getElementById("closeSettingsModal").addEventListener("click", () => closeModal("settingsModal"));
-  document.getElementById("setupApiKeyBtn").addEventListener("click", () => openModal("settingsModal"));
   document.getElementById("cancelSettingsBtn").addEventListener("click", () => closeModal("settingsModal"));
   
   document.getElementById("openAddRecipeBtn").addEventListener("click", () => {
@@ -412,17 +398,12 @@ function saveSettings() {
   state.apiKey = key;
   localStorage.setItem("gemini_api_key", key);
   
-  const model = document.getElementById("modelSelect").value;
-  state.selectedModel = model;
-  localStorage.setItem("maistokodas_model", model);
-  
   // Collapse instructions after saving key
   const instructions = document.getElementById("apiKeyInstructions");
   if (key && key.trim() !== "") {
     instructions.removeAttribute("open");
   }
   
-  toggleApiKeyAlert();
   closeModal("settingsModal");
 }
 
@@ -737,7 +718,7 @@ Grąžink tik ir TIKTAI validų JSON failą. Nenaudok jokių papildomų žodži�
   document.getElementById("aiLoader").classList.add("active");
 
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${state.selectedModel}:generateContent?key=${state.apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${state.apiKey}`;
     const response = await fetch(url, {
       method: "POST",
       headers: {
