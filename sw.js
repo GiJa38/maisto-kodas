@@ -32,26 +32,33 @@ self.addEventListener('activate', (e) => {
   );
 });
 
-// Fetch assets (Network falling back to Cache, or Cache-First for faster loading offline)
+// Fetch assets: Network-First Strategy (always gets latest from GitHub, falls back to cache offline)
 self.addEventListener('fetch', (e) => {
-  // Do not cache API calls to Google
+  // Do not intercept or cache API calls to Google Gemini
   if (e.request.url.includes('googleapis.com')) {
     return;
   }
 
   e.respondWith(
-    caches.match(e.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        // Fetch in background to update cache (Stale-While-Revalidate)
-        fetch(e.request).then((networkResponse) => {
-          if (networkResponse.status === 200) {
-            caches.open(CACHE_NAME).then((cache) => cache.put(e.request, networkResponse));
+    fetch(e.request)
+      .then((networkResponse) => {
+        // If request is successful, clone and update the cache
+        if (networkResponse && networkResponse.status === 200) {
+          const cacheCopy = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(e.request, cacheCopy);
+          });
+        }
+        return networkResponse;
+      })
+      .catch(() => {
+        // If offline / network fails, serve from cache
+        return caches.match(e.request).then((cachedResponse) => {
+          if (cachedResponse) {
+            return cachedResponse;
           }
-        }).catch(() => {/* Ignore network errors offline */});
-        
-        return cachedResponse;
-      }
-      return fetch(e.request);
-    })
+          // If not in cache and offline, fail gracefully
+        });
+      })
   );
 });

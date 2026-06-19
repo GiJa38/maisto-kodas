@@ -108,22 +108,39 @@ let state = {
   servingMultiplier: 1.0,
   activeFilter: "all",
   searchQuery: "",
-  uploadingImages: [] // Array of { id: number, base64: string, mimeType: string }
+  uploadingImages: [], // Array of { id: number, base64: string, mimeType: string }
+  selectedModel: "gemini-3.5-flash"
 };
 
 // Initialize App
 function initApp() {
-  // Register PWA Service Worker for offline capability
+  // Register PWA Service Worker with auto-update checking
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js')
-      .then(reg => console.log('Service Worker užregistruotas sėkmingai:', reg.scope))
+      .then(reg => {
+        console.log('Service Worker užregistruotas sėkmingai:', reg.scope);
+        
+        // Listen for updates to sw.js
+        reg.addEventListener('updatefound', () => {
+          const newWorker = reg.installing;
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              console.log('Rasta nauja programėlės versija, perkraunama...');
+              window.location.reload();
+            }
+          });
+        });
+      })
       .catch(err => console.error('Nepavyko užregistruoti Service Worker:', err));
   }
 
-  // Load API Key
+  // Load API Key & Selected Model
   state.apiKey = localStorage.getItem("gemini_api_key") || "";
   document.getElementById("apiKeyInput").value = state.apiKey;
   toggleApiKeyAlert();
+
+  state.selectedModel = localStorage.getItem("maistokodas_model") || "gemini-3.5-flash";
+  document.getElementById("modelSelect").value = state.selectedModel;
 
   // Load Recipes with backward compatibility migration
   let storedRecipes = localStorage.getItem("maistokodas_recipes");
@@ -386,6 +403,11 @@ function saveSettings() {
   const key = document.getElementById("apiKeyInput").value.trim();
   state.apiKey = key;
   localStorage.setItem("gemini_api_key", key);
+  
+  const model = document.getElementById("modelSelect").value;
+  state.selectedModel = model;
+  localStorage.setItem("maistokodas_model", model);
+  
   toggleApiKeyAlert();
   closeModal("settingsModal");
 }
@@ -701,7 +723,7 @@ Grąžink tik ir TIKTAI validų JSON failą. Nenaudok jokių papildomų žodži�
   document.getElementById("aiLoader").classList.add("active");
 
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${state.apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${state.selectedModel}:generateContent?key=${state.apiKey}`;
     const response = await fetch(url, {
       method: "POST",
       headers: {
