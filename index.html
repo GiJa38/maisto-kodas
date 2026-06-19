@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="lt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Maisto Kodas - Išmani Receptų Tvarkyklė</title>
+  <link rel="stylesheet" href="styles.css">
+  
+  <!-- PWA Support -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#f97316">
+  
+  <!-- Apple Mobile Web App Support -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Maisto Kodas">
+  <link rel="apple-touch-icon" href="app_icon.png">
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header>
+      <div class="logo-container">
+        <div class="logo-icon">🍳</div>
+        <div class="logo-text">
+          <h1>Mano Receptinė</h1>
+          <p>Išmanus virtuvės asistentas</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-secondary btn-icon" id="openSettingsBtn" title="Nustatymai">
+          <!-- Settings Icon SVG -->
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        </button>
+        <button class="btn btn-primary" id="openAddRecipeBtn">
+          <!-- Plus Icon SVG -->
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          Pridėti receptą
+        </button>
+      </div>
+    </header>
+
+    <!-- API Key Notice Banner -->
+    <div class="alert-banner" id="apiKeyAlert">
+      <div class="alert-content">
+        <div class="alert-icon">⚠️</div>
+        <div class="alert-text">
+          <h4>Nenustatytas Gemini API raktas!</h4>
+          <p>Norėdami naudoti automatinį receptų nuskaitymą iš nuotraukų ar tekstų, įveskite API raktą nustatymuose.</p>
+        </div>
+      </div>
+      <button class="btn btn-secondary btn-sm" id="setupApiKeyBtn">Nustatyti dabar</button>
+    </div>
+
+    <!-- Search & Filters -->
+    <section class="search-filter-section">
+      <div class="search-box">
+        <!-- Search SVG -->
+        <span class="search-box-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        </span>
+        <input type="text" class="search-input" id="searchInput" placeholder="Ieškoti receptų pagal pavadinimą arba ingredientą...">
+      </div>
+      
+      <div class="filter-group" id="mealFilterGroup">
+        <button class="filter-btn active" data-filter="all">Visi</button>
+        <button class="filter-btn" data-filter="breakfast">Pusryčiai</button>
+        <button class="filter-btn" data-filter="lunch">Pietūs</button>
+        <button class="filter-btn" data-filter="dinner">Vakarienė</button>
+        <button class="filter-btn" data-filter="snack">Užkandžiai</button>
+      </div>
+    </section>
+
+    <!-- Recipes Grid -->
+    <main class="recipes-grid" id="recipesGrid">
+      <!-- Recipes cards will be dynamically injected here -->
+    </main>
+  </div>
+
+  <!-- ==================== MODALINIAI LANGAI ==================== -->
+
+  <!-- 1. Nustatymų Modalas -->
+  <div class="modal-overlay" id="settingsModal">
+    <div class="modal-container">
+      <button class="modal-close" id="closeSettingsModal">&times;</button>
+      <div class="modal-body">
+        <h2 class="section-title">Nustatymai</h2>
+        
+        <div class="settings-info-box">
+          <h5>🔑 Nemokamas Gemini API Raktas</h5>
+          <p>Ši aplikacija veikia tiesiogiai jūsų naršyklėje. Kad galėtumėte nuskaityti nuotraukas, reikalingas Google AI raktas:</p>
+          <ol>
+            <li>Eikite į <a href="https://aistudio.google.com/" target="_blank" class="settings-link">Google AI Studio</a>.</li>
+            <li>Prisijunkite su savo Google paskyra ir spustelkite **"Get API key"**.</li>
+            <li>Sukurkite naują raktą (tai visiškai nemokama) ir įklijuokite jį žemiau.</li>
+          </ol>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="apiKeyInput">Gemini API Raktas</label>
+          <input type="password" class="form-input" id="apiKeyInput" placeholder="Įklijuokite AIrakto_kodą_čia...">
+        </div>
+
+        <div class="form-group" style="margin-top: 2rem;">
+          <h5 style="margin-bottom: 0.75rem; color: var(--text-white);">Atsarginė kopija</h5>
+          <div style="display: flex; gap: 1rem;">
+            <button class="btn btn-secondary" id="exportDataBtn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+              Eksportuoti (JSON)
+            </button>
+            <button class="btn btn-secondary" id="importDataBtnClickTrigger">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+              Importuoti (JSON)
+            </button>
+            <input type="file" id="importDataFileInput" style="display: none;" accept=".json">
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn btn-secondary" id="cancelSettingsBtn">Atšaukti</button>
+          <button class="btn btn-primary" id="saveSettingsBtn">Išsaugoti</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Recepto Pridėjimo Modalas -->
+  <div class="modal-overlay" id="addRecipeModal">
+    <div class="modal-container">
+      <button class="modal-close" id="closeAddRecipeModal">&times;</button>
+      
+      <!-- Upload / Process Content -->
+      <div class="modal-body" id="addRecipeFormContent">
+        <h2 class="section-title">Pridėti naują receptą</h2>
+        <p style="color: var(--text-secondary); margin-bottom: 1.5rem; font-size: 0.9rem;">
+          Įkelkite recepto ekrano nuotrauką arba įklijuokite jo tekstą / nuorodą. AI išgriebs ingredientus ir apskaičiuos makroelementus.
+        </p>
+
+        <!-- Mode selector tab -->
+        <div class="filter-group" style="margin-bottom: 1.5rem;">
+          <button class="filter-btn active" id="modeImageBtn">Ekrano Nuotrauka (Screenshot)</button>
+          <button class="filter-btn" id="modeTextBtn">Tekstas arba Nuoroda</button>
+        </div>
+
+        <!-- Image Upload Panel -->
+        <div id="uploadImagePanel">
+          <div class="upload-drag-area" id="dragArea">
+            <div class="upload-icon">📷</div>
+            <div class="upload-text">
+              <h3>Vilkite ekrano nuotrauką čia</h3>
+              <p>arba spustelkite, kad pasirinktumėte failą iš kompiuterio</p>
+            </div>
+            <input type="file" id="recipeImageInput" accept="image/*" multiple style="display: none;">
+            <div id="uploadPreviewContainer" class="upload-preview-container"></div>
+          </div>
+        </div>
+
+        <!-- Text/URL Paste Panel -->
+        <div id="pasteTextPanel" style="display: none;">
+          <div class="form-group">
+            <label class="form-label" for="recipeTextInput">Recepto tekstas arba nuoroda</label>
+            <textarea class="form-input" id="recipeTextInput" rows="8" placeholder="Įklijuokite recepto aprašymą, ingredientų sąrašą ar nuorodą į receptą čia..."></textarea>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn btn-secondary" id="cancelAddRecipeBtn">Atšaukti</button>
+          <button class="btn btn-primary" id="processRecipeBtn">Apdoroti su AI ✨</button>
+        </div>
+      </div>
+
+      <!-- AI loading overlay inside modal -->
+      <div class="modal-body ai-loader" id="aiLoader">
+        <div class="spinner"></div>
+        <div class="ai-loader-text">
+          <h3>Receptinė analizuoja receptą...</h3>
+          <p id="aiLoaderSubtext">Skaitome tekstą, nustatome ingredientų proporcijas ir apskaičiuojame maistines vertes. Tai užtruks apie 5-15 sekundžių.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Išsamus Recepto Peržiūros Modalas -->
+  <div class="modal-overlay" id="recipeDetailsModal">
+    <div class="modal-container">
+      <button class="modal-close" id="closeDetailsModal">&times;</button>
+      
+      <!-- Recipe details placeholder banner -->
+      <div class="modal-header-banner">
+        <img src="" class="modal-banner-img" id="detailImage" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%25%22 height=%22100%25%22 viewBox=%220 0 100 100%22><rect width=%22100%25%22 height=%22100%25%22 fill=%22%231a1a20%22/><text x=%2250%25%22 y=%2255%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-size=%2224%22 fill=%22%23333%22>🥣</text></svg>'">
+        <div class="modal-banner-overlay">
+          <span class="recipe-card-tag" id="detailMealTag">Valgis</span>
+          <div class="modal-title-row">
+            <h2 class="modal-title" id="detailTitle">Recepto Pavadinimas</h2>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-body">
+        <!-- Summary details (Time, Servings) -->
+        <div class="modal-recipe-meta">
+          <span id="detailPrepTime">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            Paruošimas: 10 min
+          </span>
+          <span id="detailCookTime">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            Gaminimas: 20 min
+          </span>
+          <span id="detailDescription" style="font-weight: normal; font-style: italic; display: block; width: 100%; margin-top: 0.5rem; color: var(--text-secondary);">
+            Trumpas aprašymas apie receptą ir kodėl jis sveikas ar tinka tam valgiui.
+          </span>
+        </div>
+
+        <!-- Portion calculator row -->
+        <div class="servings-scale-box">
+          <div class="servings-label">
+            👨‍👩‍👧‍👦 Porcijų kiekis recepte:
+          </div>
+          <div class="servings-control">
+            <button class="servings-btn" id="servingsMinus">-</button>
+            <span class="servings-count" id="servingsDisplay">2</span>
+            <button class="servings-btn" id="servingsPlus">+</button>
+          </div>
+        </div>
+
+        <!-- Macro breakdown display -->
+        <div class="macro-details-container">
+          <h3 class="section-title">Nutritinė vertė (iš viso pasirinktoms porcijoms)</h3>
+          <div class="macro-details-grid">
+            <div class="macro-detail-card detail-kcal">
+              <span class="macro-detail-val" id="detailMacroKcal">350</span>
+              <span class="macro-detail-lbl">Kalorijos</span>
+            </div>
+            <div class="macro-detail-card detail-prot">
+              <span class="macro-detail-val" id="detailMacroProt">24g</span>
+              <span class="macro-detail-lbl">Baltymai</span>
+            </div>
+            <div class="macro-detail-card detail-carb">
+              <span class="macro-detail-val" id="detailMacroCarb">8g</span>
+              <span class="macro-detail-lbl">Angliav.</span>
+            </div>
+            <div class="macro-detail-card detail-fat">
+              <span class="macro-detail-val" id="detailMacroFat">26g</span>
+              <span class="macro-detail-lbl">Riebalai</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Two column details for ingredients and steps -->
+        <div class="recipe-split">
+          <!-- Ingredients -->
+          <div>
+            <h3 class="section-title">Ingredientai</h3>
+            <div class="ingredients-list" id="detailIngredientsList">
+              <!-- Dynamically rendered -->
+            </div>
+          </div>
+
+          <!-- Instructions -->
+          <div>
+            <h3 class="section-title">Eiga</h3>
+            <div class="instructions-list" id="detailInstructionsList">
+              <!-- Dynamically rendered -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom details actions -->
+        <div class="modal-actions" style="justify-content: space-between; align-items: center;">
+          <button class="btn recipe-delete-btn" id="deleteRecipeBtn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+            Ištrinti receptą
+          </button>
+          <button class="btn btn-secondary" id="closeDetailsBottomBtn">Uždaryti</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
