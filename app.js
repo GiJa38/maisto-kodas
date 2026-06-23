@@ -474,6 +474,9 @@ function renderRecipesGrid() {
     else if (recipe.mealType === "lunch") { mealIcon = "🍲"; mealLabel = "Pietūs"; }
     else if (recipe.mealType === "dinner") { mealIcon = "🥩"; mealLabel = "Vakarienė"; }
     else if (recipe.mealType === "snack") { mealIcon = "🍎"; mealLabel = "Užkandis"; }
+    else if (recipe.mealType === "salad") { mealIcon = "🥗"; mealLabel = "Salotos"; }
+    else if (recipe.mealType === "soup") { mealIcon = "🥣"; mealLabel = "Sriubos"; }
+    else if (recipe.mealType === "dessert") { mealIcon = "🍰"; mealLabel = "Desertai"; }
 
     const kcal = recipe.macros ? recipe.macros.calories : 0;
     const protein = recipe.macros ? recipe.macros.protein : 0;
@@ -545,6 +548,9 @@ function openRecipeDetails(recipeId) {
   else if (recipe.mealType === "lunch") mealLabel = "Pietūs";
   else if (recipe.mealType === "dinner") mealLabel = "Vakarienė";
   else if (recipe.mealType === "snack") mealLabel = "Užkandis";
+  else if (recipe.mealType === "salad") mealLabel = "Salotos";
+  else if (recipe.mealType === "soup") mealLabel = "Sriubos";
+  else if (recipe.mealType === "dessert") mealLabel = "Desertai";
   detailMealTag.textContent = mealLabel;
 
   document.getElementById("detailTitle").textContent = recipe.title;
@@ -690,7 +696,7 @@ Tavo užduotys:
 Privalai sugeneruoti tikslią JSON struktūrą pagal šį šabloną:
 {
   "title": "Recepto Pavadinimas (pvz. Purūs avižiniai blynai)",
-  "mealType": "breakfast" | "lunch" | "dinner" | "snack" (nustatyk pagal receptą, kuriam valgymui labiausiai tinka),
+  "mealType": "breakfast" | "lunch" | "dinner" | "snack" | "salad" | "soup" | "dessert" (nustatyk pagal receptą, kuriam valgymui ar tipui labiausiai tinka. Pvz., jei tai salotos, nustatyk "salad", jei sriuba - "soup", jei saldus patiekalas/pyragas/desertas - "dessert"),
   "prepTime": 15 (paruošimo laikas minutėmis kaip skaičius, jei nėra - spėk),
   "cookTime": 20 (gaminimo laikas minutėmis kaip skaičius, jei nėra - spėk),
   "servings": 2 (numatytasis porcijų skaičius kaip skaičius),
@@ -1109,6 +1115,9 @@ function saveRecipeEdits() {
   else if (mealType === "lunch") mealLabel = "Pietūs";
   else if (mealType === "dinner") mealLabel = "Vakarienė";
   else if (mealType === "snack") mealLabel = "Užkandis";
+  else if (mealType === "salad") mealLabel = "Salotos";
+  else if (mealType === "soup") mealLabel = "Sriubos";
+  else if (mealType === "dessert") mealLabel = "Desertai";
   detailMealTag.textContent = mealLabel;
 
   document.getElementById("detailTitle").textContent = title;

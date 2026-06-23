@@ -27,6 +27,9 @@
   --color-lunch: #f59e0b; /* Amber */
   --color-dinner: #8b5cf6; /* Violet */
   --color-snack: #06b6d4; /* Cyan */
+  --color-salad: #84cc16; /* Lime */
+  --color-soup: #f43f5e; /* Rose */
+  --color-dessert: #ec4899; /* Pink */
   
   /* Macros Colors */
   --color-protein: #f43f5e; /* Rose */
@@ -388,6 +391,9 @@ header {
 .tag-lunch { background-color: var(--color-lunch); }
 .tag-dinner { background-color: var(--color-dinner); }
 .tag-snack { background-color: var(--color-snack); }
+.tag-salad { background-color: var(--color-salad); }
+.tag-soup { background-color: var(--color-soup); }
+.tag-dessert { background-color: var(--color-dessert); }
 
 .recipe-card-content {
   padding: 1.5rem;
@@ -1248,27 +1254,9 @@ header {
     font-size: 1rem;
   }
   
-  /* Horizontal scroll for filters on mobile (Instagram style) */
-  .filter-group {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    padding-bottom: 0.5rem;
-    margin-right: -1rem;
-    margin-left: -1rem;
-    padding-right: 1rem;
-    padding-left: 1rem;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none; /* Firefox */
-  }
-  
-  .filter-group::-webkit-scrollbar {
-    display: none; /* Chrome/Safari */
-  }
-  
   .filter-btn {
     padding: 0.5rem 1rem;
     font-size: 0.8rem;
-    flex-shrink: 0;
     border-radius: var(--radius-sm);
   }
   
