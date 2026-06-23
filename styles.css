@@ -33,6 +33,7 @@
   --color-carbs: #fbbf24; /* Amber light */
   --color-fat: #38bdf8; /* Sky */
   --color-calories: #f97316; /* Orange */
+  --color-fiber: #10b981; /* Emerald */
   
   /* Layout Dimensions */
   --radius-sm: 8px;
@@ -434,8 +435,8 @@ header {
 /* Card Macros Grid */
 .card-macros {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 0.5rem;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.4rem;
 }
 
 .macro-box {
@@ -465,6 +466,7 @@ header {
 .card-macros .macro-prot .macro-box-val { color: var(--color-protein); }
 .card-macros .macro-carb .macro-box-val { color: var(--color-carbs); }
 .card-macros .macro-fat .macro-box-val { color: var(--color-fat); }
+.card-macros .macro-fiber .macro-box-val { color: var(--color-fiber); }
 
 /* Modal overlay */
 .modal-overlay {
@@ -568,7 +570,9 @@ header {
 
 .modal-recipe-meta {
   display: flex;
-  gap: 1.5rem;
+  flex-wrap: wrap;
+  column-gap: 1.5rem;
+  row-gap: 0.5rem;
   margin-bottom: 2rem;
   font-size: 0.9rem;
   color: var(--text-secondary);
@@ -587,6 +591,15 @@ header {
 
 .modal-recipe-meta span svg {
   color: var(--color-calories);
+}
+
+.recipe-detail-description {
+  flex: 1 1 100%;
+  width: 100%;
+  font-weight: normal;
+  font-style: italic;
+  margin-top: 0.5rem;
+  color: var(--text-secondary);
 }
 
 /* Macro Details Row */
@@ -608,13 +621,16 @@ header {
 
 .macro-details-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 1rem;
 }
 
 @media (max-width: 480px) {
   .macro-details-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+  .detail-fib {
+    grid-column: span 2;
   }
 }
 
@@ -641,6 +657,7 @@ header {
 .detail-prot::before { background-color: var(--color-protein); }
 .detail-carb::before { background-color: var(--color-carbs); }
 .detail-fat::before { background-color: var(--color-fat); }
+.detail-fib::before { background-color: var(--color-fiber); }
 
 .macro-detail-val {
   font-size: 1.5rem;
@@ -653,6 +670,7 @@ header {
 .detail-prot .macro-detail-val { color: var(--color-protein); }
 .detail-carb .macro-detail-val { color: var(--color-carbs); }
 .detail-fat .macro-detail-val { color: var(--color-fat); }
+.detail-fib .macro-detail-val { color: var(--color-fiber); }
 
 .macro-detail-lbl {
   font-size: 0.75rem;
@@ -1070,6 +1088,101 @@ header {
   transform: translateY(-2px);
 }
 
+/* Recipe Editing Layouts */
+.edit-meta-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 600px) {
+  .edit-meta-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+}
+
+.edit-servings-box {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-color);
+  padding: 1rem 1.5rem;
+  border-radius: var(--radius-md);
+  margin-bottom: 2rem;
+}
+
+.edit-macro-label {
+  font-size: 0.7rem;
+  text-align: center;
+  margin-bottom: 0.25rem !important;
+  color: var(--text-secondary);
+}
+
+.edit-macro-input {
+  text-align: center;
+  padding: 0.4rem !important;
+  font-size: 0.95rem;
+  border-radius: var(--radius-sm) !important;
+}
+
+.btn-small {
+  padding: 0.4rem 0.8rem !important;
+  font-size: 0.8rem !important;
+  border-radius: var(--radius-sm) !important;
+}
+
+.ingredients-list-edit, .instructions-list-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.ingredient-edit-row {
+  display: grid;
+  grid-template-columns: 2.2fr 1.2fr 1fr auto;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+@media (max-width: 600px) {
+  .ingredient-edit-row {
+    grid-template-columns: 1.5fr 1fr 1fr auto;
+    gap: 0.25rem;
+  }
+}
+
+.instruction-edit-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
+.instruction-edit-row textarea {
+  flex-grow: 1;
+  resize: vertical;
+}
+
+.btn-delete-row {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  padding: 0.6rem !important;
+  border-radius: var(--radius-sm) !important;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-smooth);
+}
+
+.btn-delete-row:hover {
+  background: #ef4444;
+  color: white;
+  border-color: transparent;
+}
+
 /* Keyframes animations */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-5px); }
@@ -1210,6 +1323,10 @@ header {
   .card-macros {
     grid-template-columns: repeat(2, 1fr);
     gap: 0.35rem;
+  }
+  
+  .card-macros .macro-fiber {
+    grid-column: span 2;
   }
   
   .macro-box {

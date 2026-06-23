@@ -29,7 +29,8 @@ const mockRecipes = [
       calories: 380,
       protein: 14,
       carbs: 22,
-      fat: 26
+      fat: 26,
+      fiber: 6
     },
     image: "" // Empty or placeholder CSS based image
   },
@@ -60,7 +61,8 @@ const mockRecipes = [
       calories: 590,
       protein: 38,
       carbs: 48,
-      fat: 24
+      fat: 24,
+      fiber: 7
     },
     image: ""
   },
@@ -94,7 +96,8 @@ const mockRecipes = [
       calories: 420,
       protein: 36,
       carbs: 8,
-      fat: 28
+      fat: 28,
+      fiber: 3
     },
     image: ""
   }
@@ -170,6 +173,21 @@ function initApp() {
     }
   } else {
     state.recipes = [...mockRecipes];
+    saveRecipesToLocalStorage();
+  }
+
+  // Migrate existing recipes to include fiber if missing
+  let migrated = false;
+  state.recipes.forEach(recipe => {
+    if (!recipe.macros) {
+      recipe.macros = { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 };
+      migrated = true;
+    } else if (recipe.macros.fiber === undefined) {
+      recipe.macros.fiber = estimateRecipeFiber(recipe);
+      migrated = true;
+    }
+  });
+  if (migrated) {
     saveRecipesToLocalStorage();
   }
 
@@ -290,6 +308,13 @@ function setupEventListeners() {
   // Delete Recipe Action
   document.getElementById("deleteRecipeBtn").addEventListener("click", deleteActiveRecipe);
 
+  // Edit Recipe Actions
+  document.getElementById("editRecipeBtn").addEventListener("click", enterEditMode);
+  document.getElementById("cancelEditRecipeBtn").addEventListener("click", exitEditMode);
+  document.getElementById("saveEditRecipeBtn").addEventListener("click", saveRecipeEdits);
+  document.getElementById("addEditIngredientBtn").addEventListener("click", () => addEditIngredientRow());
+  document.getElementById("addEditStepBtn").addEventListener("click", () => addEditStepRow());
+
   // Backup Data Handlers
   document.getElementById("exportDataBtn").addEventListener("click", exportRecipesJSON);
   
@@ -307,6 +332,9 @@ function openModal(id) {
 
 function closeModal(id) {
   document.getElementById(id).classList.remove("active");
+  if (id === "recipeDetailsModal") {
+    exitEditMode();
+  }
 }
 
 // Reset the Add Form
@@ -451,6 +479,7 @@ function renderRecipesGrid() {
     const protein = recipe.macros ? recipe.macros.protein : 0;
     const carbs = recipe.macros ? recipe.macros.carbs : 0;
     const fat = recipe.macros ? recipe.macros.fat : 0;
+    const fiber = recipe.macros ? (recipe.macros.fiber || 0) : 0;
 
     // HTML for card
     card.innerHTML = `
@@ -485,6 +514,10 @@ function renderRecipesGrid() {
           <div class="macro-box macro-fat">
             <span class="macro-box-val">${fat}g</span>
             <span class="macro-box-lbl">rieb</span>
+          </div>
+          <div class="macro-box macro-fiber">
+            <span class="macro-box-val">${fiber}g</span>
+            <span class="macro-box-lbl">skai</span>
           </div>
         </div>
       </div>
@@ -549,11 +582,13 @@ function updateDetailsModalValues() {
   const protein = recipe.macros ? Math.round(recipe.macros.protein * mult) : 0;
   const carbs = recipe.macros ? Math.round(recipe.macros.carbs * mult) : 0;
   const fat = recipe.macros ? Math.round(recipe.macros.fat * mult) : 0;
+  const fiber = recipe.macros ? Math.round((recipe.macros.fiber || 0) * mult) : 0;
 
   document.getElementById("detailMacroKcal").textContent = kcal;
   document.getElementById("detailMacroProt").textContent = protein + "g";
   document.getElementById("detailMacroCarb").textContent = carbs + "g";
   document.getElementById("detailMacroFat").textContent = fat + "g";
+  document.getElementById("detailMacroFib").textContent = fiber + "g";
 
   // Render Ingredients
   const ingredientsList = document.getElementById("detailIngredientsList");
@@ -642,11 +677,15 @@ async function processRecipeWithAI() {
   }
 
   const mode = document.getElementById("modeImageBtn").classList.contains("active") ? "image" : "text";
-  
+
   // Gather input parameters
   let promptText = `
-Esi profesionalus virtuvės šefas ir mitybos specialistas. Išanalizuok šį receptą (tekstą arba ekrano nuotrauką) ir ištrauk iš jo pilną informaciją. 
+Esi profesionalus virtuvės šefas ir mitybos specialistas. Išanalizuok šią užklausą: tai gali būti recepto tekstas, jo ekrano nuotrauka (screenshot) arba jau pagaminto patiekalo nuotrauka.
 Labai svarbu: VISAS atsakymas privalo būti lietuvių kalba.
+
+Tavo užduotys:
+1. Jei tai yra pagaminto patiekalo nuotrauka: atpažink, koks tai patiekalas, ir sukurk jam pilną, subalansuotą, maistingą receptą su visomis reikiamomis detalėmis.
+2. Jei tai yra recepto tekstas arba ekrano nuotrauka su tekstu: nuskaityk tekstą ir tiksliai ištrauk jame esančią informaciją.
 
 Privalai sugeneruoti tikslią JSON struktūrą pagal šį šabloną:
 {
@@ -655,11 +694,11 @@ Privalai sugeneruoti tikslią JSON struktūrą pagal šį šabloną:
   "prepTime": 15 (paruošimo laikas minutėmis kaip skaičius, jei nėra - spėk),
   "cookTime": 20 (gaminimo laikas minutėmis kaip skaičius, jei nėra - spėk),
   "servings": 2 (numatytasis porcijų skaičius kaip skaičius),
-  "description": "Labai trumpas (1-2 sakinių) recepto aprašymas ir paaiškinimas, kodėl jis maistingas arba tinka šiam dienos valgymui.",
+  "description": "Labai trumpas (1-2 sakinių) recepto aprašymas. Jei sugeneravai receptą iš patiekalo nuotraukos, trumpai paminėk, kad patiekalas atpažintas iš nuotraukos ir paaiškink, kodėl jis maistingas.",
   "ingredients": [
     {
       "name": "ingredientas (pvz. kiaušiniai arba miltai)",
-      "amount": 2 (kiekis kaip skaičius arba nulis, jei tai tik pagal skonį),
+      "amount": 2 (kiekis kaip skaičius arba nulis, jei tai tai tik pagal skonį),
       "unit": "vienetas (pvz. g, ml, vnt, valg. šaukšt., arbat. šaukštel., arba tuščias tekstas)"
     }
   ],
@@ -671,7 +710,8 @@ Privalai sugeneruoti tikslią JSON struktūrą pagal šį šabloną:
     "calories": 420 (bendras kalorijų kiekis kcal VISOMS porcijoms bendrai kaip skaičius. Jei nurodyta vienai porcijai, padaugink iš porcijų skaičiaus),
     "protein": 24 (bendras baltymų kiekis gramais kaip skaičius visam receptui),
     "carbs": 35 (bendras angliavandenių kiekis gramais kaip skaičius visam receptui),
-    "fat": 18 (bendras riebalų kiekis gramais kaip skaičius visam receptui)
+    "fat": 18 (bendras riebalų kiekis gramais kaip skaičius visam receptui),
+    "fiber": 5 (bendras skaidulų kiekis gramais kaip skaičius visam receptui. Jei nėra nurodyta, įvertink/spėk pagal ingredientus)
   }
 }
 
@@ -684,10 +724,10 @@ Grąžink tik ir TIKTAI validų JSON failą. Nenaudok jokių papildomų žodži�
 
   if (mode === "image") {
     if (state.uploadingImages.length === 0) {
-      alert("Prašome pasirinkti arba įvilkti bent vieną ekrano nuotrauką.");
+      alert("Prašome pasirinkti arba įkelti bent vieną nuotrauką.");
       return;
     }
-    document.getElementById("aiLoaderSubtext").textContent = "Nuskaitomi paveikslėliai ir analizuojama recepto sudėtis...";
+    document.getElementById("aiLoaderSubtext").textContent = "Nuskaitomos nuotraukos ir analizuojamas patiekalas...";
     
     // Push prompt
     parts.push({ text: promptText });
@@ -808,6 +848,16 @@ function importRecipesJSON(event) {
           // Overwrite
           state.recipes = imported;
         }
+
+        // Migrate imported recipes to include fiber if missing
+        state.recipes.forEach(recipe => {
+          if (!recipe.macros) {
+            recipe.macros = { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 };
+          } else if (recipe.macros.fiber === undefined) {
+            recipe.macros.fiber = estimateRecipeFiber(recipe);
+          }
+        });
+
         saveRecipesToLocalStorage();
         renderRecipesGrid();
         alert("Receptai sėkmingai importuoti!");
@@ -820,6 +870,265 @@ function importRecipesJSON(event) {
     }
   };
   reader.readAsText(file);
+}
+
+// Estimuoti skaidulas esamiems ar importuotiems receptams, kuriuose nėra šio lauko
+function estimateRecipeFiber(recipe) {
+  if (!recipe.ingredients || !Array.isArray(recipe.ingredients)) {
+    return 0;
+  }
+
+  let totalFiber = 0;
+
+  // Žodynas su lietuviškais ingredientų raktiniais žodžiais ir apytiksliu skaidulų kiekiu
+  const fiberKeywords = [
+    { keys: ["avokad"], fiberPerUnit: 6, fiberPerGram: 0.06 },
+    { keys: ["brokol"], fiberPerUnit: 5, fiberPerGram: 0.026 },
+    { keys: ["duon", "baton"], fiberPerUnit: 2, fiberPerGram: 0.04 },
+    { keys: ["aviž", "aviz"], fiberPerUnit: 8, fiberPerGram: 0.10 },
+    { keys: ["ryž", "ryz"], fiberPerUnit: 2, fiberPerGram: 0.015 },
+    { keys: ["griki", "grik"], fiberPerUnit: 3, fiberPerGram: 0.06 },
+    { keys: ["obuol"], fiberPerUnit: 2.5, fiberPerGram: 0.024 },
+    { keys: ["mork"], fiberPerUnit: 2, fiberPerGram: 0.028 },
+    { keys: ["pomidor"], fiberPerUnit: 1, fiberPerGram: 0.012 },
+    { keys: ["agurk"], fiberPerUnit: 0.5, fiberPerGram: 0.005 },
+    { keys: ["salot", "špinat", "spinat", "krap", "petraž"], fiberPerUnit: 0.5, fiberPerGram: 0.02 },
+    { keys: ["pupel", "lęš", "les", "žirn", "zirn", "avinžirn"], fiberPerUnit: 10, fiberPerGram: 0.07 },
+    { keys: ["riešut", "riesut", "migdol", "lazdyn", "rieš", "ries"], fiberPerUnit: 3, fiberPerGram: 0.07 },
+    { keys: ["sėkl", "sekl", "chia", "linų", "linu", "sezam"], fiberPerUnit: 2, fiberPerGram: 0.15 },
+    { keys: ["uog", "brašk", "brask", "šilauo", "silauo", "aviet", "vyšn", "vysn"], fiberPerUnit: 2, fiberPerGram: 0.03 },
+    { keys: ["banan"], fiberPerUnit: 3, fiberPerGram: 0.026 },
+    { keys: ["kruop", "miltai", "makaron"], fiberPerUnit: 4, fiberPerGram: 0.03 }
+  ];
+
+  recipe.ingredients.forEach(ing => {
+    if (!ing.name) return;
+    const nameLower = ing.name.toLowerCase();
+    const amount = ing.amount || 0;
+    const unitLower = ing.unit ? ing.unit.toLowerCase() : "";
+
+    const match = fiberKeywords.find(item => 
+      item.keys.some(key => nameLower.includes(key))
+    );
+
+    if (match) {
+      if (amount > 0) {
+        if (unitLower.includes("g") && !unitLower.includes("valg") && !unitLower.includes("arbat")) {
+          totalFiber += amount * match.fiberPerGram;
+        } else if (unitLower.includes("vnt") || unitLower.includes("riek") || unitLower.includes("galv") || unitLower.includes("sauja")) {
+          totalFiber += amount * match.fiberPerUnit;
+        } else {
+          totalFiber += amount * (match.fiberPerUnit * 0.25);
+        }
+      }
+    }
+  });
+
+  return Math.round(totalFiber);
+}
+
+// Edit Mode state and functions
+let editIngredients = [];
+let editInstructions = [];
+
+function enterEditMode() {
+  const recipe = state.recipes.find(r => r.id === state.currentRecipeId);
+  if (!recipe) return;
+
+  // Swap panels
+  document.getElementById("detailsViewNormal").style.display = "none";
+  document.getElementById("detailsViewEdit").style.display = "block";
+
+  // Prepopulate basic inputs
+  document.getElementById("detailEditTitle").value = recipe.title || "";
+  document.getElementById("detailEditMealType").value = recipe.mealType || "breakfast";
+  document.getElementById("detailEditPrepTime").value = recipe.prepTime !== undefined ? recipe.prepTime : 0;
+  document.getElementById("detailEditCookTime").value = recipe.cookTime !== undefined ? recipe.cookTime : 0;
+  document.getElementById("detailEditDescription").value = recipe.description || "";
+  document.getElementById("detailEditServings").value = recipe.servings !== undefined ? recipe.servings : 2;
+
+  // Prepopulate macros
+  document.getElementById("detailEditMacroKcal").value = recipe.macros ? (recipe.macros.calories || 0) : 0;
+  document.getElementById("detailEditMacroProt").value = recipe.macros ? (recipe.macros.protein || 0) : 0;
+  document.getElementById("detailEditMacroCarb").value = recipe.macros ? (recipe.macros.carbs || 0) : 0;
+  document.getElementById("detailEditMacroFat").value = recipe.macros ? (recipe.macros.fat || 0) : 0;
+  document.getElementById("detailEditMacroFib").value = recipe.macros ? (recipe.macros.fiber || 0) : 0;
+
+  // Deep copy ingredients and instructions to edit state arrays
+  editIngredients = recipe.ingredients ? recipe.ingredients.map(ing => ({ ...ing })) : [];
+  editInstructions = recipe.instructions ? [...recipe.instructions] : [];
+
+  // Render editable lists
+  renderEditIngredientsList();
+  renderEditInstructionsList();
+}
+
+function exitEditMode() {
+  // Swap panels
+  document.getElementById("detailsViewNormal").style.display = "block";
+  document.getElementById("detailsViewEdit").style.display = "none";
+}
+
+function renderEditIngredientsList() {
+  const container = document.getElementById("editIngredientsList");
+  container.innerHTML = "";
+
+  editIngredients.forEach((ing, index) => {
+    const row = document.createElement("div");
+    row.className = "ingredient-edit-row";
+
+    row.innerHTML = `
+      <input type="text" class="form-input" placeholder="Ingredientas" value="${ing.name || ""}" data-index="${index}" data-prop="name">
+      <input type="number" step="any" class="form-input" placeholder="Kiekis" value="${ing.amount !== null && ing.amount !== undefined ? ing.amount : ""}" data-index="${index}" data-prop="amount">
+      <input type="text" class="form-input" placeholder="Vienetas" value="${ing.unit || ""}" data-index="${index}" data-prop="unit">
+      <button type="button" class="btn-delete-row" title="Pašalinti">&times;</button>
+    `;
+
+    // Listeners to update editIngredients array on input
+    row.querySelectorAll("input").forEach(input => {
+      input.addEventListener("input", (e) => {
+        const idx = parseInt(e.target.getAttribute("data-index"));
+        const prop = e.target.getAttribute("data-prop");
+        let val = e.target.value;
+        if (prop === "amount") {
+          val = val === "" ? null : parseFloat(val);
+        }
+        editIngredients[idx][prop] = val;
+      });
+    });
+
+    row.querySelector(".btn-delete-row").addEventListener("click", () => {
+      editIngredients.splice(index, 1);
+      renderEditIngredientsList();
+    });
+
+    container.appendChild(row);
+  });
+}
+
+function addEditIngredientRow() {
+  editIngredients.push({ name: "", amount: null, unit: "" });
+  renderEditIngredientsList();
+}
+
+function renderEditInstructionsList() {
+  const container = document.getElementById("editInstructionsList");
+  container.innerHTML = "";
+
+  editInstructions.forEach((step, index) => {
+    const row = document.createElement("div");
+    row.className = "instruction-edit-row";
+
+    row.innerHTML = `
+      <span class="step-num" style="align-self: center;">${index + 1}</span>
+      <textarea class="form-input" rows="2" placeholder="Žingsnio aprašymas..." data-index="${index}">${step || ""}</textarea>
+      <button type="button" class="btn-delete-row" title="Pašalinti" style="padding: 0.85rem !important;">&times;</button>
+    `;
+
+    // Listener to update editInstructions array on input
+    row.querySelector("textarea").addEventListener("input", (e) => {
+      const idx = parseInt(e.target.getAttribute("data-index"));
+      editInstructions[idx] = e.target.value;
+    });
+
+    row.querySelector(".btn-delete-row").addEventListener("click", () => {
+      editInstructions.splice(index, 1);
+      renderEditInstructionsList();
+    });
+
+    container.appendChild(row);
+  });
+}
+
+function addEditStepRow() {
+  editInstructions.push("");
+  renderEditInstructionsList();
+}
+
+function saveRecipeEdits() {
+  const recipeIndex = state.recipes.findIndex(r => r.id === state.currentRecipeId);
+  if (recipeIndex === -1) return;
+
+  const title = document.getElementById("detailEditTitle").value.trim();
+  if (!title) {
+    alert("Prašome įvesti recepto pavadinimą!");
+    return;
+  }
+
+  const mealType = document.getElementById("detailEditMealType").value;
+  const prepTime = parseInt(document.getElementById("detailEditPrepTime").value) || 0;
+  const cookTime = parseInt(document.getElementById("detailEditCookTime").value) || 0;
+  const description = document.getElementById("detailEditDescription").value.trim();
+  const servings = parseInt(document.getElementById("detailEditServings").value) || 2;
+
+  // Read macros
+  const calories = parseInt(document.getElementById("detailEditMacroKcal").value) || 0;
+  const protein = parseInt(document.getElementById("detailEditMacroProt").value) || 0;
+  const carbs = parseInt(document.getElementById("detailEditMacroCarb").value) || 0;
+  const fat = parseInt(document.getElementById("detailEditMacroFat").value) || 0;
+  const fiber = parseInt(document.getElementById("detailEditMacroFib").value) || 0;
+
+  // Filter out completely empty ingredients
+  const finalIngredients = editIngredients.filter(ing => ing.name.trim() !== "");
+
+  // Filter out empty steps
+  const finalInstructions = editInstructions.filter(step => step.trim() !== "");
+
+  // Update recipe object in state
+  const updatedRecipe = {
+    ...state.recipes[recipeIndex],
+    title,
+    mealType,
+    prepTime,
+    cookTime,
+    description,
+    servings,
+    ingredients: finalIngredients,
+    instructions: finalInstructions,
+    macros: {
+      calories,
+      protein,
+      carbs,
+      fat,
+      fiber
+    }
+  };
+
+  state.recipes[recipeIndex] = updatedRecipe;
+  saveRecipesToLocalStorage();
+
+  // Refresh home page grid
+  renderRecipesGrid();
+
+  // Update banner and metadata inside modal
+  const detailMealTag = document.getElementById("detailMealTag");
+  detailMealTag.className = `recipe-card-tag tag-${mealType}`;
+  
+  let mealLabel = "Valgis";
+  if (mealType === "breakfast") mealLabel = "Pusryčiai";
+  else if (mealType === "lunch") mealLabel = "Pietūs";
+  else if (mealType === "dinner") mealLabel = "Vakarienė";
+  else if (mealType === "snack") mealLabel = "Užkandis";
+  detailMealTag.textContent = mealLabel;
+
+  document.getElementById("detailTitle").textContent = title;
+  document.getElementById("detailPrepTime").innerHTML = `
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+    Paruošimas: ${prepTime} min
+  `;
+  document.getElementById("detailCookTime").innerHTML = `
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+    Gaminimas: ${cookTime} min
+  `;
+  document.getElementById("detailDescription").textContent = description;
+  document.getElementById("servingsDisplay").textContent = servings;
+
+  // Reset serving multiplier and update dynamic details modal values
+  state.servingMultiplier = 1.0;
+  updateDetailsModalValues();
+
+  // Exit edit mode panel view
+  exitEditMode();
 }
 
 // Launch app on load
