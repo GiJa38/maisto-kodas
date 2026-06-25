@@ -54,13 +54,14 @@
       
       <div class="filter-group" id="mealFilterGroup">
         <button class="filter-btn active" data-filter="all">Visi</button>
-        <button class="filter-btn" data-filter="breakfast">Pusryčiai</button>
-        <button class="filter-btn" data-filter="lunch">Pietūs</button>
-        <button class="filter-btn" data-filter="dinner">Vakarienė</button>
-        <button class="filter-btn" data-filter="snack">Užkandžiai</button>
-        <button class="filter-btn" data-filter="salad">Salotos</button>
-        <button class="filter-btn" data-filter="soup">Sriubos</button>
-        <button class="filter-btn" data-filter="dessert">Desertai</button>
+        <button class="filter-btn" data-filter="salad">Salotos 🥗</button>
+        <button class="filter-btn" data-filter="soup">Sriubos 🥣</button>
+        <button class="filter-btn" data-filter="chicken">Vištiena 🍗</button>
+        <button class="filter-btn" data-filter="pork">Kiauliena 🥩</button>
+        <button class="filter-btn" data-filter="fish">Žuvis 🐟</button>
+        <button class="filter-btn" data-filter="curd">Varškė 🥛</button>
+        <button class="filter-btn" data-filter="snack">Užkandžiai 🍎</button>
+        <button class="filter-btn" data-filter="other">Kita 🍽️</button>
       </div>
     </section>
 
@@ -209,6 +210,9 @@
             <p id="detailDescription" class="recipe-detail-description">
               Trumpas aprašymas apie receptą ir kodėl jis sveikas ar tinka tam valgiui.
             </p>
+            <p id="detailSuitableMeals" class="recipe-detail-description" style="margin-top: 0.25rem; font-style: normal; font-weight: 700; color: #fbbf24;">
+              Rekomenduojama: 
+            </p>
           </div>
 
           <!-- Portion calculator row -->
@@ -293,13 +297,14 @@
             <div>
               <label class="form-label" for="detailEditMealType">Valgio tipas</label>
               <select class="form-input" id="detailEditMealType">
-                <option value="breakfast">Pusryčiai</option>
-                <option value="lunch">Pietūs</option>
-                <option value="dinner">Vakarienė</option>
-                <option value="snack">Užkandžiai</option>
                 <option value="salad">Salotos</option>
                 <option value="soup">Sriubos</option>
-                <option value="dessert">Desertai</option>
+                <option value="chicken">Vištiena</option>
+                <option value="pork">Kiauliena</option>
+                <option value="fish">Žuvis</option>
+                <option value="curd">Varškė</option>
+                <option value="snack">Užkandžiai</option>
+                <option value="other">Kita</option>
               </select>
             </div>
             <div>
@@ -315,6 +320,17 @@
           <div class="form-group">
             <label class="form-label" for="detailEditDescription">Aprašymas</label>
             <textarea class="form-input" id="detailEditDescription" rows="3" placeholder="Trumpas recepto aprašymas..."></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Rekomenduojama valgyti (galima kelis)</label>
+            <div class="edit-occasions-grid">
+              <label class="checkbox-label"><input type="checkbox" id="editMealBreakfast"> Pusryčiams 🥞</label>
+              <label class="checkbox-label"><input type="checkbox" id="editMealLunch"> Pietums 🍲</label>
+              <label class="checkbox-label"><input type="checkbox" id="editMealDinner"> Vakarienei 🥩</label>
+              <label class="checkbox-label"><input type="checkbox" id="editMealSnack"> Užkandžiui 🍎</label>
+              <label class="checkbox-label"><input type="checkbox" id="editMealDessert"> Desertui 🍰</label>
+            </div>
           </div>
 
           <div class="form-group edit-servings-box">

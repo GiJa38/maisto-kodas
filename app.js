@@ -1,11 +1,32 @@
 // Maisto Kodas - Recipe Planner Application Script
 
+// Global category details
+const CATEGORY_MAP = {
+  salad: { label: "Salotos", emoji: "🥗" },
+  soup: { label: "Sriubos", emoji: "🥣" },
+  chicken: { label: "Vištiena", emoji: "🍗" },
+  pork: { label: "Kiauliena", emoji: "🥩" },
+  fish: { label: "Žuvis", emoji: "🐟" },
+  curd: { label: "Varškė", emoji: "🥛" },
+  snack: { label: "Užkandžiai", emoji: "🍎" },
+  other: { label: "Kita", emoji: "🍽️" }
+};
+
+const MEAL_OCCASIONS = {
+  breakfast: { label: "Pusryčiams", emoji: "🥞" },
+  lunch: { label: "Pietums", emoji: "🍲" },
+  dinner: { label: "Vakarienei", emoji: "🥩" },
+  snack: { label: "Užkandžiui", emoji: "🍎" },
+  dessert: { label: "Desertui", emoji: "🍰" }
+};
+
 // Mock Initial Recipes Data (in Lithuanian)
 const mockRecipes = [
   {
     id: "mock-1",
     title: "Avokado ir Kepto Kiaušinio Skrebutis",
-    mealType: "breakfast",
+    mealType: "snack",
+    suitableMeals: ["breakfast", "snack"],
     prepTime: 5,
     cookTime: 5,
     servings: 1,
@@ -37,7 +58,8 @@ const mockRecipes = [
   {
     id: "mock-2",
     title: "Lašiša su Terijaki ir Garintais Brokoliais",
-    mealType: "lunch",
+    mealType: "fish",
+    suitableMeals: ["lunch", "dinner"],
     prepTime: 10,
     cookTime: 15,
     servings: 2,
@@ -55,7 +77,7 @@ const mockRecipes = [
       "Lašišos filė nusausinkite, supjaustykite į dvi dalis, aptepkite teriyaki padažu ir palikite pasimarinuoti 5 min.",
       "Keptuvėje įkaitinkite alyvuogių aliejų, dėkite lašišą oda žemyn ir kepkite 4-5 minutes, tada apverskite ir kepkite dar 3-4 minutes.",
       "Brokolius išgarinkite arba apvirkite pasūdytame vandenyje apie 4-5 minutes, kol bus minkšti, bet vis dar traškūs.",
-      "Į lėkštes dėkite ryžius, šalia išdėliokite brokolius bei lašišą. Užpilkite likusiu keptuvėje teriyaki padažu ir apibarstykite sezamo sėklomis."
+      "Into lėkštes dėkite ryžius, šalia išdėliokite brokolius bei lašišą. Užpilkite likusiu keptuvėje teriyaki padažu ir apibarstykite sezamo sėklomis."
     ],
     macros: {
       calories: 590,
@@ -69,7 +91,8 @@ const mockRecipes = [
   {
     id: "mock-3",
     title: "Viduržemio Jūros Vištienos Salotos",
-    mealType: "dinner",
+    mealType: "chicken",
+    suitableMeals: ["lunch", "dinner"],
     prepTime: 15,
     cookTime: 10,
     servings: 2,
@@ -175,6 +198,9 @@ function initApp() {
     state.recipes = [...mockRecipes];
     saveRecipesToLocalStorage();
   }
+
+  // Run category restructuring migration
+  migrateToNewCategories();
 
   // Migrate existing recipes to include fiber if missing
   let migrated = false;
@@ -467,16 +493,10 @@ function renderRecipesGrid() {
     const card = document.createElement("div");
     card.className = "recipe-card";
     
-    // Pick appropriate icon based on mealType
-    let mealIcon = "🍳";
-    let mealLabel = "Valgis";
-    if (recipe.mealType === "breakfast") { mealIcon = "🥞"; mealLabel = "Pusryčiai"; }
-    else if (recipe.mealType === "lunch") { mealIcon = "🍲"; mealLabel = "Pietūs"; }
-    else if (recipe.mealType === "dinner") { mealIcon = "🥩"; mealLabel = "Vakarienė"; }
-    else if (recipe.mealType === "snack") { mealIcon = "🍎"; mealLabel = "Užkandis"; }
-    else if (recipe.mealType === "salad") { mealIcon = "🥗"; mealLabel = "Salotos"; }
-    else if (recipe.mealType === "soup") { mealIcon = "🥣"; mealLabel = "Sriubos"; }
-    else if (recipe.mealType === "dessert") { mealIcon = "🍰"; mealLabel = "Desertai"; }
+    // Pick appropriate icon based on category (mealType)
+    const categoryInfo = CATEGORY_MAP[recipe.mealType] || CATEGORY_MAP.other;
+    const mealIcon = categoryInfo.emoji;
+    const mealLabel = categoryInfo.label;
 
     const kcal = recipe.macros ? recipe.macros.calories : 0;
     const protein = recipe.macros ? recipe.macros.protein : 0;
@@ -540,18 +560,9 @@ function openRecipeDetails(recipeId) {
   state.servingMultiplier = 1.0; // reset multiplier
 
   // Set header
-  const detailMealTag = document.getElementById("detailMealTag");
+  const categoryInfo = CATEGORY_MAP[recipe.mealType] || CATEGORY_MAP.other;
   detailMealTag.className = `recipe-card-tag tag-${recipe.mealType}`;
-  
-  let mealLabel = "Valgis";
-  if (recipe.mealType === "breakfast") mealLabel = "Pusryčiai";
-  else if (recipe.mealType === "lunch") mealLabel = "Pietūs";
-  else if (recipe.mealType === "dinner") mealLabel = "Vakarienė";
-  else if (recipe.mealType === "snack") mealLabel = "Užkandis";
-  else if (recipe.mealType === "salad") mealLabel = "Salotos";
-  else if (recipe.mealType === "soup") mealLabel = "Sriubos";
-  else if (recipe.mealType === "dessert") mealLabel = "Desertai";
-  detailMealTag.textContent = mealLabel;
+  detailMealTag.textContent = categoryInfo.label;
 
   document.getElementById("detailTitle").textContent = recipe.title;
   document.getElementById("detailImage").src = recipe.image || "";
@@ -566,6 +577,14 @@ function openRecipeDetails(recipeId) {
     Gaminimas: ${recipe.cookTime} min
   `;
   document.getElementById("detailDescription").textContent = recipe.description || "";
+
+  // Set recommended meals (suitableMeals)
+  const mealsList = recipe.suitableMeals || [];
+  const mealsText = mealsList.map(mealKey => {
+    const info = MEAL_OCCASIONS[mealKey];
+    return info ? `${info.label} ${info.emoji}` : mealKey;
+  }).join(", ");
+  document.getElementById("detailSuitableMeals").textContent = mealsText ? `Rekomenduojama: ${mealsText}` : "";
 
   // Set Servings Display
   document.getElementById("servingsDisplay").textContent = recipe.servings;
@@ -696,7 +715,8 @@ Tavo užduotys:
 Privalai sugeneruoti tikslią JSON struktūrą pagal šį šabloną:
 {
   "title": "Recepto Pavadinimas (pvz. Purūs avižiniai blynai)",
-  "mealType": "breakfast" | "lunch" | "dinner" | "snack" | "salad" | "soup" | "dessert" (nustatyk pagal receptą, kuriam valgymui ar tipui labiausiai tinka. Pvz., jei tai salotos, nustatyk "salad", jei sriuba - "soup", jei saldus patiekalas/pyragas/desertas - "dessert"),
+  "mealType": "salad" | "soup" | "chicken" | "pork" | "fish" | "curd" | "snack" | "other" (nustatyk patiekalo tipą arba pagrindinį ingredientą iš pateiktų parinkčių: salotos -> "salad", sriuba -> "soup", vištiena -> "chicken", kiauliena -> "pork", žuvis -> "fish", varškė -> "curd", užkandžiai -> "snack", o visiems kitiems patiekalams -> "other"),
+  "suitableMeals": ["breakfast", "lunch", "dinner", "snack", "dessert"] (nurodyk rekomenduojamus valgymo laikus / progas, kada geriausia valgyti šį patiekalą. Gali pasirinkti vieną ar kelis iš šių: pusryčiams -> "breakfast", pietums -> "lunch", vakarienei -> "dinner", užkandžiui -> "snack", desertui -> "dessert". Gražink kaip string masyvą),
   "prepTime": 15 (paruošimo laikas minutėmis kaip skaičius, jei nėra - spėk),
   "cookTime": 20 (gaminimo laikas minutėmis kaip skaičius, jei nėra - spėk),
   "servings": 2 (numatytasis porcijų skaičius kaip skaičius),
@@ -763,35 +783,73 @@ Grąžink tik ir TIKTAI validų JSON failą. Nenaudok jokių papildomų žodži�
   document.getElementById("addRecipeFormContent").style.display = "none";
   document.getElementById("aiLoader").classList.add("active");
 
-  try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${state.apiKey}`;
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: parts
+  // We try a list of fallback models in case one of them is busy, rate limited or not found
+  const modelsToTry = [
+    "gemini-2.5-flash",
+    "gemini-2.0-flash",
+    "gemini-1.5-flash",
+    "gemini-3.5-flash", // included as legacy fallback
+    "gemini-2.5-pro",
+    "gemini-1.5-pro"
+  ];
+
+  let lastError = null;
+  let textResponse = null;
+
+  for (const modelName of modelsToTry) {
+    try {
+      console.log(`Bandoma naudoti Gemini modelį: ${modelName}`);
+      const loaderText = mode === "image" 
+        ? "Nuskaitomos nuotraukos ir analizuojamas patiekalas..." 
+        : "Skaitomas recepto tekstas ir skaičiuojami makroelementai...";
+      document.getElementById("aiLoaderSubtext").innerHTML = `
+        ${loaderText}<br>
+        <span style="font-size: 0.8rem; opacity: 0.7; margin-top: 0.5rem; display: inline-block;">
+          Bandomas modelis: <strong>${modelName}</strong>
+        </span>
+      `;
+
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${state.apiKey}`;
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: parts
+            }
+          ],
+          generationConfig: {
+            responseMimeType: "application/json"
           }
-        ],
-        generationConfig: {
-          responseMimeType: "application/json"
-        }
-      })
-    });
+        })
+      });
 
-    if (!response.ok) {
-      const errData = await response.json();
-      throw new Error(errData.error?.message || "Nepavyko prisijungti prie Gemini API.");
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error?.message || `API klaida (${response.status})`);
+      }
+
+      const data = await response.json();
+      textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      
+      if (textResponse) {
+        console.log(`Sėkmingai gautas atsakymas naudojant modelį: ${modelName}`);
+        break; // Successfully got response, break out of loop
+      } else {
+        throw new Error("Gautas tuščias atsakymas iš modelio.");
+      }
+    } catch (err) {
+      console.warn(`Modelis ${modelName} nepasiekiamas arba grąžino klaidą:`, err.message);
+      lastError = err;
     }
+  }
 
-    const data = await response.json();
-    let textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
+  try {
     if (!textResponse) {
-      throw new Error("Nepavyko gauti atsakymo iš AI modelio. Patikrinkite API raktą.");
+      throw new Error(lastError ? lastError.message : "Visi bandyti Gemini modeliai šiuo metu nepasiekiami.");
     }
 
     // Clean up markdown block wrapping if Gemini didn't respect generationConfig
@@ -802,6 +860,15 @@ Grąžink tik ir TIKTAI validų JSON failą. Nenaudok jokių papildomų žodži�
     // Fill in standard ID and placeholder image if missing
     parsedRecipe.id = "recipe-" + Date.now();
     parsedRecipe.image = ""; // local representation uses fallback text/icons
+
+    // Sanitize and ensure categories & occasions are set correctly
+    const validCategories = ["salad", "soup", "chicken", "pork", "fish", "curd", "snack", "other"];
+    if (!parsedRecipe.mealType || !validCategories.includes(parsedRecipe.mealType)) {
+      parsedRecipe.mealType = "other";
+    }
+    if (!parsedRecipe.suitableMeals || !Array.isArray(parsedRecipe.suitableMeals)) {
+      parsedRecipe.suitableMeals = ["lunch", "dinner"];
+    }
 
     // Add to recipes array
     state.recipes.unshift(parsedRecipe);
@@ -854,6 +921,9 @@ function importRecipesJSON(event) {
           // Overwrite
           state.recipes = imported;
         }
+
+        // Migrate imported recipes to new categories and occasions
+        migrateToNewCategories();
 
         // Migrate imported recipes to include fiber if missing
         state.recipes.forEach(recipe => {
@@ -947,11 +1017,19 @@ function enterEditMode() {
 
   // Prepopulate basic inputs
   document.getElementById("detailEditTitle").value = recipe.title || "";
-  document.getElementById("detailEditMealType").value = recipe.mealType || "breakfast";
+  document.getElementById("detailEditMealType").value = recipe.mealType || "other";
   document.getElementById("detailEditPrepTime").value = recipe.prepTime !== undefined ? recipe.prepTime : 0;
   document.getElementById("detailEditCookTime").value = recipe.cookTime !== undefined ? recipe.cookTime : 0;
   document.getElementById("detailEditDescription").value = recipe.description || "";
   document.getElementById("detailEditServings").value = recipe.servings !== undefined ? recipe.servings : 2;
+
+  // Prepopulate checkboxes for suitableMeals
+  const suitable = recipe.suitableMeals || [];
+  document.getElementById("editMealBreakfast").checked = suitable.includes("breakfast");
+  document.getElementById("editMealLunch").checked = suitable.includes("lunch");
+  document.getElementById("editMealDinner").checked = suitable.includes("dinner");
+  document.getElementById("editMealSnack").checked = suitable.includes("snack");
+  document.getElementById("editMealDessert").checked = suitable.includes("dessert");
 
   // Prepopulate macros
   document.getElementById("detailEditMacroKcal").value = recipe.macros ? (recipe.macros.calories || 0) : 0;
@@ -1051,6 +1129,7 @@ function addEditStepRow() {
   renderEditInstructionsList();
 }
 
+
 function saveRecipeEdits() {
   const recipeIndex = state.recipes.findIndex(r => r.id === state.currentRecipeId);
   if (recipeIndex === -1) return;
@@ -1066,6 +1145,14 @@ function saveRecipeEdits() {
   const cookTime = parseInt(document.getElementById("detailEditCookTime").value) || 0;
   const description = document.getElementById("detailEditDescription").value.trim();
   const servings = parseInt(document.getElementById("detailEditServings").value) || 2;
+
+  // Read recommended meal checkboxes
+  const suitableMeals = [];
+  if (document.getElementById("editMealBreakfast").checked) suitableMeals.push("breakfast");
+  if (document.getElementById("editMealLunch").checked) suitableMeals.push("lunch");
+  if (document.getElementById("editMealDinner").checked) suitableMeals.push("dinner");
+  if (document.getElementById("editMealSnack").checked) suitableMeals.push("snack");
+  if (document.getElementById("editMealDessert").checked) suitableMeals.push("dessert");
 
   // Read macros
   const calories = parseInt(document.getElementById("detailEditMacroKcal").value) || 0;
@@ -1089,6 +1176,7 @@ function saveRecipeEdits() {
     cookTime,
     description,
     servings,
+    suitableMeals,
     ingredients: finalIngredients,
     instructions: finalInstructions,
     macros: {
@@ -1108,17 +1196,9 @@ function saveRecipeEdits() {
 
   // Update banner and metadata inside modal
   const detailMealTag = document.getElementById("detailMealTag");
+  const categoryInfo = CATEGORY_MAP[mealType] || CATEGORY_MAP.other;
   detailMealTag.className = `recipe-card-tag tag-${mealType}`;
-  
-  let mealLabel = "Valgis";
-  if (mealType === "breakfast") mealLabel = "Pusryčiai";
-  else if (mealType === "lunch") mealLabel = "Pietūs";
-  else if (mealType === "dinner") mealLabel = "Vakarienė";
-  else if (mealType === "snack") mealLabel = "Užkandis";
-  else if (mealType === "salad") mealLabel = "Salotos";
-  else if (mealType === "soup") mealLabel = "Sriubos";
-  else if (mealType === "dessert") mealLabel = "Desertai";
-  detailMealTag.textContent = mealLabel;
+  detailMealTag.textContent = categoryInfo.label;
 
   document.getElementById("detailTitle").textContent = title;
   document.getElementById("detailPrepTime").innerHTML = `
@@ -1138,6 +1218,77 @@ function saveRecipeEdits() {
 
   // Exit edit mode panel view
   exitEditMode();
+}
+
+// Restructuring database migration function
+function migrateToNewCategories() {
+  let migrated = false;
+  state.recipes.forEach(recipe => {
+    // 1. Ensure suitableMeals exists
+    if (!recipe.suitableMeals || !Array.isArray(recipe.suitableMeals)) {
+      recipe.suitableMeals = [];
+      const oldType = recipe.mealType;
+      if (oldType === "breakfast" || oldType === "lunch" || oldType === "dinner" || oldType === "snack" || oldType === "dessert") {
+        recipe.suitableMeals.push(oldType);
+      } else if (oldType === "salad" || oldType === "soup") {
+        recipe.suitableMeals.push("lunch", "dinner");
+      } else {
+        recipe.suitableMeals.push("lunch", "dinner");
+      }
+      migrated = true;
+    }
+
+    // 2. Map old categories to new category set
+    const validCategories = ["salad", "soup", "chicken", "pork", "fish", "curd", "snack", "other"];
+    if (!validCategories.includes(recipe.mealType)) {
+      const textToScan = ((recipe.title || "") + " " + 
+        (recipe.description || "") + " " + 
+        (recipe.ingredients ? recipe.ingredients.map(i => i.name).join(" ") : "")
+      ).toLowerCase();
+
+      let newType = "other";
+
+      if (textToScan.includes("višt") || textToScan.includes("vist") || textToScan.includes("kalakut") || textToScan.includes("paukšt")) {
+        newType = "chicken";
+      } else if (textToScan.includes("kiaul") || textToScan.includes("šoninė") || textToScan.includes("sonine") || textToScan.includes("kump")) {
+        newType = "pork";
+      } else if (textToScan.includes("žuv") || textToScan.includes("zuv") || textToScan.includes("lašiš") || textToScan.includes("lasis") || textToScan.includes("kreve") || textToScan.includes("tuna") || textToScan.includes("menk") || textToScan.includes("lydek")) {
+        newType = "fish";
+      } else if (textToScan.includes("varšk") || textToScan.includes("varsk") || textToScan.includes("sūr") || textToScan.includes("sur") || textToScan.includes("jogurt") || textToScan.includes("grietin")) {
+        if (textToScan.includes("varšk") || textToScan.includes("varsk")) {
+          newType = "curd";
+        }
+      } else if (textToScan.includes("salot")) {
+        newType = "salad";
+      } else if (textToScan.includes("sriub")) {
+        newType = "soup";
+      }
+
+      if (newType === "other") {
+        const oldType = recipe.mealType;
+        if (oldType === "salad") {
+          newType = "salad";
+        } else if (oldType === "soup") {
+          newType = "soup";
+        } else if (oldType === "snack") {
+          newType = "snack";
+        } else if (oldType === "breakfast" || oldType === "dessert") {
+          if (textToScan.includes("varšk") || textToScan.includes("varsk")) {
+            newType = "curd";
+          } else {
+            newType = "snack";
+          }
+        }
+      }
+
+      recipe.mealType = newType;
+      migrated = true;
+    }
+  });
+
+  if (migrated) {
+    saveRecipesToLocalStorage();
+  }
 }
 
 // Launch app on load

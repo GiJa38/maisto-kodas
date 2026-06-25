@@ -23,13 +23,14 @@
   --text-white: #ffffff;
   
   /* Meal Types Colors */
-  --color-breakfast: #10b981; /* Emerald */
-  --color-lunch: #f59e0b; /* Amber */
-  --color-dinner: #8b5cf6; /* Violet */
-  --color-snack: #06b6d4; /* Cyan */
+  --color-chicken: #f97316; /* Orange */
+  --color-pork: #ef4444; /* Red */
+  --color-fish: #06b6d4; /* Cyan */
+  --color-curd: #3b82f6; /* Blue */
   --color-salad: #84cc16; /* Lime */
-  --color-soup: #f43f5e; /* Rose */
-  --color-dessert: #ec4899; /* Pink */
+  --color-soup: #8b5cf6; /* Violet */
+  --color-snack: #10b981; /* Emerald */
+  --color-other: #6b7280; /* Gray */
   
   /* Macros Colors */
   --color-protein: #f43f5e; /* Rose */
@@ -387,13 +388,14 @@ header {
   box-shadow: 0 4px 10px rgba(0,0,0,0.3);
 }
 
-.tag-breakfast { background-color: var(--color-breakfast); }
-.tag-lunch { background-color: var(--color-lunch); }
-.tag-dinner { background-color: var(--color-dinner); }
-.tag-snack { background-color: var(--color-snack); }
+.tag-chicken { background-color: var(--color-chicken); }
+.tag-pork { background-color: var(--color-pork); }
+.tag-fish { background-color: var(--color-fish); }
+.tag-curd { background-color: var(--color-curd); }
 .tag-salad { background-color: var(--color-salad); }
 .tag-soup { background-color: var(--color-soup); }
-.tag-dessert { background-color: var(--color-dessert); }
+.tag-snack { background-color: var(--color-snack); }
+.tag-other { background-color: var(--color-other); }
 
 .recipe-card-content {
   padding: 1.5rem;
@@ -1187,6 +1189,42 @@ header {
   background: #ef4444;
   color: white;
   border-color: transparent;
+}
+
+/* Edit Occasions Checkboxes */
+.edit-occasions-grid {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+.checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  cursor: pointer;
+  user-select: none;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.02);
+  padding: 0.5rem 0.85rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  transition: var(--transition-smooth);
+}
+
+.checkbox-label:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.checkbox-label input {
+  accent-color: #f97316;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
 }
 
 /* Keyframes animations */
