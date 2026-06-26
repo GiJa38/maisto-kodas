@@ -9,6 +9,7 @@ const CATEGORY_MAP = {
   fish: { label: "Žuvis", emoji: "🐟" },
   curd: { label: "Varškė", emoji: "🥛" },
   snack: { label: "Užkandžiai", emoji: "🍎" },
+  dessert: { label: "Desertai", emoji: "🍰" },
   other: { label: "Kita", emoji: "🍽️" }
 };
 
@@ -504,6 +505,13 @@ function renderRecipesGrid() {
     const fat = recipe.macros ? recipe.macros.fat : 0;
     const fiber = recipe.macros ? (recipe.macros.fiber || 0) : 0;
 
+    // occasions badges html
+    const mealsList = recipe.suitableMeals || [];
+    const occasionsHTML = mealsList.map(mealKey => {
+      const info = MEAL_OCCASIONS[mealKey];
+      return info ? `<span class="occasion-tag" title="${info.label}">${info.emoji} <span class="occasion-tag-label">${info.label}</span></span>` : "";
+    }).join("");
+
     // HTML for card
     card.innerHTML = `
       <div class="recipe-card-image-container">
@@ -519,6 +527,10 @@ function renderRecipesGrid() {
         <div class="recipe-card-meta">
           <span>⏱️ ${recipe.prepTime + recipe.cookTime} min</span>
           <span>👨‍👩‍👧‍👦 ${recipe.servings} porc.</span>
+        </div>
+
+        <div class="recipe-card-occasions">
+          ${occasionsHTML}
         </div>
 
         <div class="card-macros">
@@ -715,8 +727,11 @@ Tavo užduotys:
 Privalai sugeneruoti tikslią JSON struktūrą pagal šį šabloną:
 {
   "title": "Recepto Pavadinimas (pvz. Purūs avižiniai blynai)",
-  "mealType": "salad" | "soup" | "chicken" | "pork" | "fish" | "curd" | "snack" | "other" (nustatyk patiekalo tipą arba pagrindinį ingredientą iš pateiktų parinkčių: salotos -> "salad", sriuba -> "soup", vištiena -> "chicken", kiauliena -> "pork", žuvis -> "fish", varškė -> "curd", užkandžiai -> "snack", o visiems kitiems patiekalams -> "other"),
-  "suitableMeals": ["breakfast", "lunch", "dinner", "snack", "dessert"] (nurodyk rekomenduojamus valgymo laikus / progas, kada geriausia valgyti šį patiekalą. Gali pasirinkti vieną ar kelis iš šių: pusryčiams -> "breakfast", pietums -> "lunch", vakarienei -> "dinner", užkandžiui -> "snack", desertui -> "dessert". Gražink kaip string masyvą),
+  "mealType": "salad" | "soup" | "chicken" | "pork" | "fish" | "curd" | "snack" | "dessert" | "other" (nustatyk patiekalo tipą arba pagrindinį ingredientą iš pateiktų parinkčių: salotos -> "salad", sriuba -> "soup", vištiena -> "chicken", kiauliena -> "pork", žuvis -> "fish", varškė -> "curd", užkandžiai -> "snack", saldūs patiekalai/kepiniai/desertai -> "dessert", o visiems kitiems patiekalams -> "other"),
+  "suitableMeals": ["breakfast", "lunch", "dinner", "snack", "dessert"] (nurodyk rekomenduojamus valgymo laikus / progas, kada geriausia valgyti šį patiekalą iš šių parinkčių: pusryčiams -> "breakfast", pietums -> "lunch", vakarienei -> "dinner", užkandžiui -> "snack", desertui -> "dessert". Gali pasirinkti vieną ar kelis ir grąžinti kaip string masyvą. SVARBU: Vadovaukis šiomis taisyklėmis pagal makroelementus:
+    - Patiekalai, kuriuose gausu angliavandenių ar cukraus (pvz. sušiai, makaronai, bulvės, saldūs blynai, košės su daug saldžių priedų), turėtų būti siūlomi Pietums ("lunch") arba Užkandžiui ("snack"), bet NE Vakarienei ("dinner").
+    - Vakarienei ("dinner") siūlyk tik lengvus patiekalus: turinčius daug baltymų ir skaidulų, su nedideliu greitųjų angliavandenių kiekiu (pvz. salotos, sriubos, vištiena ar žuvis su daržovėmis).
+    - Saldūs desertai ar pyragai turėtų būti siūlomi tik kaip "dessert" ir/arba "snack".),
   "prepTime": 15 (paruošimo laikas minutėmis kaip skaičius, jei nėra - spėk),
   "cookTime": 20 (gaminimo laikas minutėmis kaip skaičius, jei nėra - spėk),
   "servings": 2 (numatytasis porcijų skaičius kaip skaičius),
@@ -862,7 +877,7 @@ Grąžink tik ir TIKTAI validų JSON failą. Nenaudok jokių papildomų žodži�
     parsedRecipe.image = ""; // local representation uses fallback text/icons
 
     // Sanitize and ensure categories & occasions are set correctly
-    const validCategories = ["salad", "soup", "chicken", "pork", "fish", "curd", "snack", "other"];
+    const validCategories = ["salad", "soup", "chicken", "pork", "fish", "curd", "snack", "dessert", "other"];
     if (!parsedRecipe.mealType || !validCategories.includes(parsedRecipe.mealType)) {
       parsedRecipe.mealType = "other";
     }
@@ -1239,7 +1254,7 @@ function migrateToNewCategories() {
     }
 
     // 2. Map old categories to new category set
-    const validCategories = ["salad", "soup", "chicken", "pork", "fish", "curd", "snack", "other"];
+    const validCategories = ["salad", "soup", "chicken", "pork", "fish", "curd", "snack", "dessert", "other"];
     if (!validCategories.includes(recipe.mealType)) {
       const textToScan = ((recipe.title || "") + " " + 
         (recipe.description || "") + " " + 
@@ -1262,6 +1277,8 @@ function migrateToNewCategories() {
         newType = "salad";
       } else if (textToScan.includes("sriub")) {
         newType = "soup";
+      } else if (textToScan.includes("desert") || textToScan.includes("pyrag") || textToScan.includes("sausain") || textToScan.includes("tort") || textToScan.includes("saldėsi") || textToScan.includes("saldesi") || textToScan.includes("keksiuk")) {
+        newType = "dessert";
       }
 
       if (newType === "other") {
@@ -1272,7 +1289,9 @@ function migrateToNewCategories() {
           newType = "soup";
         } else if (oldType === "snack") {
           newType = "snack";
-        } else if (oldType === "breakfast" || oldType === "dessert") {
+        } else if (oldType === "dessert") {
+          newType = "dessert";
+        } else if (oldType === "breakfast") {
           if (textToScan.includes("varšk") || textToScan.includes("varsk")) {
             newType = "curd";
           } else {
