@@ -341,6 +341,7 @@ function setupEventListeners() {
   document.getElementById("saveEditRecipeBtn").addEventListener("click", saveRecipeEdits);
   document.getElementById("addEditIngredientBtn").addEventListener("click", () => addEditIngredientRow());
   document.getElementById("addEditStepBtn").addEventListener("click", () => addEditStepRow());
+  document.getElementById("recalculateMacrosAIBtn").addEventListener("click", recalculateMacrosWithAI);
 
   // Backup Data Handlers
   document.getElementById("exportDataBtn").addEventListener("click", exportRecipesJSON);
@@ -1233,6 +1234,125 @@ function saveRecipeEdits() {
 
   // Exit edit mode panel view
   exitEditMode();
+}
+
+async function recalculateMacrosWithAI() {
+  if (!state.apiKey || state.apiKey.trim() === "") {
+    alert("Pirmiausia įveskite Gemini API raktą nustatymuose!");
+    openModal("settingsModal");
+    return;
+  }
+
+  const title = document.getElementById("detailEditTitle").value.trim();
+  const ingredients = editIngredients.filter(ing => ing.name && ing.name.trim() !== "");
+
+  if (ingredients.length === 0) {
+    alert("Įveskite bent vieną ingredientą su pavadinimu!");
+    return;
+  }
+
+  const btn = document.getElementById("recalculateMacrosAIBtn");
+  const originalText = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = "Skaičiuojama... ⏳";
+
+  const ingredientsText = ingredients.map(ing => {
+    const amountStr = ing.amount !== null && ing.amount !== undefined ? ing.amount : "";
+    const unitStr = ing.unit || "";
+    return `- ${ing.name} ${amountStr} ${unitStr}`.trim();
+  }).join("\n");
+
+  const promptText = `Esi profesionalus virtuvės šefas ir mitybos specialistas.
+Apskaičiuok šio patiekalo bendrą maistinę vertę (visam patiekalui bendrai, o ne vienai porcijai) pagal jo pavadinimą ir ingredientus.
+Svarbu: įvertink kiekvieno ingrediento svorį/kiekį ir atitinkamai paskaičiuok kalorijas, baltymus, angliavandenius, riebalus ir skaidulas.
+
+Patiekalas: ${title || "Nenurodytas patiekalas"}
+Ingredientai:
+${ingredientsText}
+
+Privalai sugeneruoti tikslią JSON struktūrą pagal šį šabloną:
+{
+  "calories": 420,
+  "protein": 24,
+  "carbs": 35,
+  "fat": 18,
+  "fiber": 5
+}
+
+Grąžink tik ir TIKTAI validų JSON failą. Nenaudok jokių papildomų žodžių, komentarų ar markdown žymių prieš ar po JSON objekto.`;
+
+  const parts = [{ text: promptText }];
+
+  const modelsToTry = [
+    "gemini-2.5-flash",
+    "gemini-2.0-flash",
+    "gemini-1.5-flash",
+    "gemini-2.5-pro",
+    "gemini-1.5-pro"
+  ];
+
+  let lastError = null;
+  let textResponse = null;
+
+  for (const modelName of modelsToTry) {
+    try {
+      console.log(`Bandoma perskaičiuoti makroelementus naudojant modelį: ${modelName}`);
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${state.apiKey}`;
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          contents: [{ parts: parts }],
+          generationConfig: {
+            responseMimeType: "application/json"
+          }
+        })
+      });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error?.message || `API klaida (${response.status})`);
+      }
+
+      const data = await response.json();
+      textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      
+      if (textResponse) {
+        break;
+      } else {
+        throw new Error("Gautas tuščias atsakymas.");
+      }
+    } catch (err) {
+      console.warn(`Modelis ${modelName} perskaičiuojant nepavyko:`, err.message);
+      lastError = err;
+    }
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = originalText;
+
+  if (!textResponse) {
+    alert("Nepavyko susisiekti su Gemini API: " + (lastError ? lastError.message : "Visi modeliai nepasiekiami."));
+    return;
+  }
+
+  try {
+    const cleanJSON = textResponse.replace(/```json/g, "").replace(/```/g, "").trim();
+    const macros = JSON.parse(cleanJSON);
+
+    document.getElementById("detailEditMacroKcal").value = Math.round(macros.calories || 0);
+    document.getElementById("detailEditMacroProt").value = Math.round(macros.protein || 0);
+    document.getElementById("detailEditMacroCarb").value = Math.round(macros.carbs || 0);
+    document.getElementById("detailEditMacroFat").value = Math.round(macros.fat || 0);
+    document.getElementById("detailEditMacroFib").value = Math.round(macros.fiber || 0);
+    
+    console.log("Sėkmingai atnaujinti makroelementai:", macros);
+  } catch (err) {
+    console.error("Klaida analizuojant maistinės vertės atsakymą:", err, textResponse);
+    alert("Nepavyko teisingai apdoroti AI atsakymo. Bandykite dar kartą.");
+  }
 }
 
 // Restructuring database migration function

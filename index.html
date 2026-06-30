@@ -346,7 +346,10 @@
 
           <!-- Edit Macros Grid -->
           <div class="macro-details-container">
-            <h3 class="section-title">Nutritinė vertė (visam receptui bendrai)</h3>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+              <h3 class="section-title" style="margin-bottom: 0;">Nutritinė vertė (visam receptui bendrai)</h3>
+              <button type="button" class="btn btn-secondary btn-small" id="recalculateMacrosAIBtn" style="margin-top: 0;">Perskaičiuoti su AI ✨</button>
+            </div>
             <div class="macro-details-grid edit-macros-grid">
               <div class="macro-detail-card detail-kcal">
                 <label class="form-label edit-macro-label">Kcal</label>
